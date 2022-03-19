@@ -2,6 +2,9 @@
 #include <LoRa.h> //responsável pela comunicação com o WIFI Lora
 #include <Wire.h>  //responsável pela comunicação i2c
 #include "SSD1306.h" //responsável pela comunicação com o display
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include "ArduinoJson.h"
 
 // Definição dos pinos 
 #define SCK     5    // GPIO5  -- SX127x's SCK
@@ -14,6 +17,16 @@
 #define BAND    915E6  //Frequencia do radio - podemos utilizar ainda : 433E6, 868E6, 915E6
 #define PABOOST true
 
+//Net Setup
+#define NET_SSID "VIVO-9C08"
+#define NET_PASSWORD "C662349C08"
+
+//MQTT Setup
+#define MQTT_ID "6233d19e5a995b97fd288d08"
+#define MQTT_BROKER "192.168.15.6"
+#define MQTT_PORT 1883
+#define MQTT_MILLIS_TOPIC "vibrationData"
+
 //parametros: address,SDA,SCL 
 SSD1306 display(0x3c, 4, 15); //construtor do objeto que controlaremos o display
 
@@ -23,8 +36,12 @@ String packet ;
 
 String acelX, acelY, acelZ;
 
+WiFiClient espClient; //Cliente de rede
+PubSubClient MQTT(espClient); //Cliente MQTT
+StaticJsonDocument<256> doc;
+char out[128];
+
 void setup() {
-  
   //configura os pinos como saida
   pinMode(16,OUTPUT); //RST do oled
   pinMode(2,OUTPUT);
@@ -36,18 +53,24 @@ void setup() {
   display.setFont(ArialMT_Plain_10);
   delay(1500);
   display.clear();
+  
+  setupWifi();
+  setupMQTT();
+  delay(1000);
 
   SPI.begin(SCK,MISO,MOSI,SS); //inicia a comunicação serial com o Lora
   LoRa.setPins(SS,RST,DI00); //configura os pinos que serão utlizados pela biblioteca (deve ser chamado antes do LoRa.begin)
   
   //inicializa o Lora com a frequencia específica.
   if (!LoRa.begin(BAND)) {
+    display.clear();
     display.drawString(0, 0, "Starting LoRa failed!");
     display.display();
     while (1);
   }
 
   //indica no display que inicilizou corretamente.
+  display.clear();
   display.drawString(0, 0, "LoRa Initial success!");
   display.drawString(0, 10, "Wait for incoming data...");
   display.display();
@@ -64,6 +87,9 @@ void loop() {
     delay(500);
     cbk(packetSize);  
   } 
+
+  setupWifi();
+  setupMQTT();
 }
 
 
@@ -75,6 +101,11 @@ void cbk(int packetSize) {
   }
   rssi = "RSSI =  " + String(LoRa.packetRssi(), DEC)+ "dB"; //configura a String de Intensidade de Sinal (RSSI)
   splitPacket(packet);
+  doc["acelX"] = acelX.toDouble();
+  doc["acelY"] = acelY.toDouble();
+  doc["acelZ"] = acelZ.toDouble();
+  int b = serializeJson(doc, out);
+  MQTT.publish(MQTT_MILLIS_TOPIC, out);
   //mostrar dados em tela
   loraData();
 }
@@ -103,4 +134,57 @@ void loraData(){
   display.drawString(0, 20 , "AcelZ: "+ acelZ + " m/s^2");
   display.drawString(0, 40, rssi);  
   display.display();
+}
+
+void setupWifi() {
+  //Configura a conexão à rede sem fio
+
+  if (WiFi.status() == WL_CONNECTED)
+        return;
+
+  display.drawString(0, 0, "Connecting to WiFi");
+  display.display();
+  
+  WiFi.begin(NET_SSID, NET_PASSWORD);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      display.drawString(0, 10, "......");
+      display.display();
+  }
+
+  display.clear();
+  display.drawString(0, 0, "WiFi connected");
+  display.drawString(0, 10, "IP address: " + WiFi.localIP());
+  display.display();
+}
+
+void setupMQTT() {
+   MQTT.setServer(MQTT_BROKER, MQTT_PORT);   //informa qual broker e porta deve ser conectado
+   
+   while (!MQTT.connected()) 
+    {
+        display.clear();
+        display.drawString(0, 0, "Connecting to Broker");
+        display.drawString(0, 10, "MQTT...");
+        display.display();
+        delay(2000);
+        if (MQTT.connect(MQTT_ID)) 
+        {
+            display.clear();
+            display.drawString(0, 0, "Successfully connected");
+            display.drawString(0, 10, "to MQTT broker");
+            display.drawString(0, 20, "Wait for incoming data...");
+            display.display();
+        } 
+        else
+        {
+            display.clear();
+            display.drawString(0, 0, "Failed to connect");
+            display.drawString(0, 10, "There will be another connection");
+            display.drawString(0, 20, "attempt in 2s");
+            display.display();
+            delay(2000);
+        }
+    }
 }
