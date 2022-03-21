@@ -153,6 +153,6 @@ void loop() {
 
   Serial.println(" ");
 
-  delay(10000); 
+  delay(5000); 
   
 }
