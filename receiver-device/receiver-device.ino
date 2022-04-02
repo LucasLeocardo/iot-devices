@@ -21,7 +21,7 @@
 #define NET_PASSWORD "C662349C08"
 
 //MQTT Setup
-#define GATEWAY_ID "3238w19e5a995b97fk288d00"
+#define GATEWAY_ID "62479bcee7668ac9a912b280"
 #define MQTT_BROKER "192.168.15.10"
 #define MQTT_PORT 1883
 #define MQTT_MILLIS_TOPIC "vibrationData"
