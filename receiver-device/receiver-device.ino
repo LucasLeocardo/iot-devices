@@ -4,7 +4,6 @@
 #include "SSD1306.h" //responsável pela comunicação com o display
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include "ArduinoJson.h"
 
 // Definição dos pinos 
 #define SCK     5    // GPIO5  -- SX127x's SCK
@@ -22,8 +21,8 @@
 #define NET_PASSWORD "C662349C08"
 
 //MQTT Setup
-#define MQTT_ID "6233d19e5a995b97fd288d08"
-#define MQTT_BROKER "192.168.15.6"
+#define GATEWAY_ID "3238w19e5a995b97fk288d00"
+#define MQTT_BROKER "192.168.15.10"
 #define MQTT_PORT 1883
 #define MQTT_MILLIS_TOPIC "vibrationData"
 
@@ -33,13 +32,10 @@ SSD1306 display(0x3c, 4, 15); //construtor do objeto que controlaremos o display
 String rssi = "RSSI --";
 String packSize = "--";
 String packet ;
-
-String acelX, acelY, acelZ;
+char buffer[256];
 
 WiFiClient espClient; //Cliente de rede
 PubSubClient MQTT(espClient); //Cliente MQTT
-StaticJsonDocument<256> doc;
-char out[128];
 
 void setup() {
   //configura os pinos como saida
@@ -99,41 +95,14 @@ void cbk(int packetSize) {
   for (int i = 0; i < packetSize; i++) { 
     packet += (char) LoRa.read(); //recupera o dado recebido e concatena na variável "packet"
   }
-  rssi = "RSSI =  " + String(LoRa.packetRssi(), DEC)+ "dB"; //configura a String de Intensidade de Sinal (RSSI)
-  splitPacket(packet);
-  doc["acelX"] = acelX.toDouble();
-  doc["acelY"] = acelY.toDouble();
-  doc["acelZ"] = acelZ.toDouble();
-  int b = serializeJson(doc, out);
-  MQTT.publish(MQTT_MILLIS_TOPIC, out);
-  //mostrar dados em tela
-  loraData();
-}
-
-void splitPacket(String packet){
-  std::vector<String> subStrings;
-  int j=0;
-  for(int i =0; i < packet.length(); i++){
-    if(packet.charAt(i) == ','){
-      subStrings.push_back(packet.substring(j,i));
-      j = i+1;
-    }
-  }
-  subStrings.push_back(packet.substring(j,packet.length())); //to grab the last value of the string
-  acelX = subStrings[0];
-  acelY = subStrings[1];
-  acelZ = subStrings[2];
-}
-
-void loraData(){
+  rssi = "(RSSI) = " + String(LoRa.packetRssi(), DEC) + "dB"; //configura a String de Intensidade de Sinal (RSSI)
   display.clear();
-  digitalWrite(2, LOW);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(0 , 0 , "AcelX: "+ acelX + " m/s^2");
-  display.drawString(0, 10 , "AcelY: "+ acelY + " m/s^2");
-  display.drawString(0, 20 , "AcelZ: "+ acelZ + " m/s^2");
-  display.drawString(0, 40, rssi);  
+  display.drawString(0, 0, "Signal strength"); 
+  display.drawString(0, 20, rssi); 
   display.display();
+  packet.toCharArray(buffer, 256);
+  MQTT.publish(MQTT_MILLIS_TOPIC, buffer);
+  digitalWrite(2, LOW);
 }
 
 void setupWifi() {
@@ -160,6 +129,10 @@ void setupWifi() {
 }
 
 void setupMQTT() {
+  
+   if (MQTT.connected())
+        return;
+
    MQTT.setServer(MQTT_BROKER, MQTT_PORT);   //informa qual broker e porta deve ser conectado
    
    while (!MQTT.connected()) 
@@ -169,7 +142,7 @@ void setupMQTT() {
         display.drawString(0, 10, "MQTT...");
         display.display();
         delay(2000);
-        if (MQTT.connect(MQTT_ID)) 
+        if (MQTT.connect(GATEWAY_ID)) 
         {
             display.clear();
             display.drawString(0, 0, "Successfully connected");
@@ -188,3 +161,29 @@ void setupMQTT() {
         }
     }
 }
+
+//void splitPacket(String packet){
+//  std::vector<String> subStrings;
+//  int j=0;
+//  for(int i =0; i < packet.length(); i++){
+//    if(packet.charAt(i) == ','){
+//      subStrings.push_back(packet.substring(j,i));
+//      j = i+1;
+//    }
+//  }
+//  subStrings.push_back(packet.substring(j,packet.length())); //to grab the last value of the string
+//  acelX = subStrings[0];
+//  acelY = subStrings[1];
+//  acelZ = subStrings[2];
+//}
+
+//void loraData(){
+//  display.clear();
+//  digitalWrite(2, LOW);
+//  display.setTextAlignment(TEXT_ALIGN_LEFT);
+//  display.drawString(0 , 0 , "AcelX: "+ acelX + " m/s^2");
+//  display.drawString(0, 10 , "AcelY: "+ acelY + " m/s^2");
+//  display.drawString(0, 20 , "AcelZ: "+ acelZ + " m/s^2");
+//  display.drawString(0, 40, rssi);  
+//  display.display();
+//}

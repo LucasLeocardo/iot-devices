@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include <LoRa.h> //responsável pela comunicação com o WIFI Lora
 #include <SPI.h> //responsável pela comunicação serial
+#include "ArduinoJson.h"
 
 
 // Definição dos pinos 
@@ -17,6 +18,10 @@
 #define PABOOST true
 
 Adafruit_MPU6050 mpu;
+
+StaticJsonDocument<256> doc;
+char out[256];
+String deviceId = "6233d19e5a995b97fd288d08";
 
 void setup() {
   pinMode(2,OUTPUT);
@@ -106,6 +111,8 @@ void setup() {
     break;
   }
 
+  doc["deviceId"] = deviceId;
+  
   Serial.println("");
   delay(100);
 }
@@ -115,14 +122,36 @@ void loop() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
+  double aux1 = roundf(a.acceleration.x * 100);
+  double acelx = aux1 / 100;
+
+  double aux2 = roundf(a.acceleration.y * 100);
+  double acely = aux2 / 100;
+
+  double aux3 = roundf(a.acceleration.z * 100);
+  double acelZ = aux3 / 100;
+
+  double aux4 = roundf(g.gyro.x * 100);
+  double alphaX = aux4 / 100;
+
+  double aux5 = roundf(g.gyro.y * 100);
+  double alphaY = aux5 / 100;
+
+  double aux6 = roundf(g.gyro.z * 100);
+  double alphaZ = aux6 / 100;
+  
   //beginPacket : abre um pacote para adicionarmos os dados para envio
+  doc["acelX"]  = acelx;
+  doc["acelY"]  = acely;
+  doc["acelZ"]  = acelZ;
+  doc["alphaX"] = alphaX;
+  doc["alphaY"] = alphaY;
+  doc["alphaZ"] = alphaZ;
+  
   LoRa.beginPacket();
   //print: adiciona os dados no pacote
-  LoRa.print(a.acceleration.x);
-  LoRa.print(",");
-  LoRa.print(a.acceleration.y);
-  LoRa.print(",");
-  LoRa.print(a.acceleration.z);
+  serializeJson(doc, out);
+  LoRa.print(out);
   //endPacket : fecha o pacote e envia
   LoRa.endPacket(); //retorno= 1:sucesso | 0: falha
 
@@ -139,14 +168,14 @@ void loop() {
   Serial.print(a.acceleration.z);
   Serial.println(" m/s^2");
 
-//  Serial.print("Rotation X: ");
-//  Serial.print(g.gyro.x);
-//  Serial.print(", Y: ");
-//  Serial.print(g.gyro.y);
-//  Serial.print(", Z: ");
-//  Serial.print(g.gyro.z);
-//  Serial.println(" rad/s");
-//
+  Serial.print("Rotation X: ");
+  Serial.print(g.gyro.x);
+  Serial.print(", Y: ");
+  Serial.print(g.gyro.y);
+  Serial.print(", Z: ");
+  Serial.print(g.gyro.z);
+  Serial.println(" rad/s");
+
 //  Serial.print("Temperature: ");
 //  Serial.print(temp.temperature);
 //  Serial.println(" degC");
