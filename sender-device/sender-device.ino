@@ -21,7 +21,7 @@ Adafruit_MPU6050 mpu;
 
 StaticJsonDocument<256> doc;
 char out[256];
-String deviceId = "6233d19e5a995b97fd288d08";
+String deviceId = "628eccd5aa6849c399d00ee6";
 
 void setup() {
   pinMode(2,OUTPUT);
