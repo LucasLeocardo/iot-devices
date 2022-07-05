@@ -1,7 +1,7 @@
 # iot-devices
 Repository with the scripts used in the devices of the slope slide monitoring project.
 # How to send data to MQTT  over Websockets Heroku Broker
-To send data from an ESP32 Lora to an MQTT Broker over Websockets you need to use, in addition to the normal MQTT and WiFi libraries, you will need to use the WebSocketStreamClient folder in this repository and include it in the library folder of your Arduino IDE.
+To send data from an ESP32 Lora to an MQTT Broker over Websockets you need to use, in addition to the normal MQTT and WiFi libraries, you will need to use the WebSocketStreamClient that is in this repository as an example and include it in the library folder of your Arduino IDE.
 
 
 If your MQTT message is longer than 128 bytes the data will not be sent. To resolve this issue, follow the steps below:
