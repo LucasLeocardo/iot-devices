@@ -25,6 +25,8 @@
 #define MQTT_PORT 443
 #define PATH "/mqtt"
 #define GATEWAY_ID "62479bcee7668ac9a912b280"
+#define BROKER_USER_NAME "Cefet-Broker"
+#define BROKER_PASSWORD "78A23Erg"
 #define MQTT_MILLIS_TOPIC "vibrationData"
 
 //parametros: address,SDA,SCL 
@@ -77,7 +79,7 @@ void setupMQTT() {
         display.drawString(0, 10, "MQTT...");
         display.display();
         delay(2000);
-        if (MQTT.connect(GATEWAY_ID)) 
+        if (MQTT.connect(GATEWAY_ID, BROKER_USER_NAME, BROKER_PASSWORD)) 
         {
             display.clear();
             display.drawString(0, 0, "Successfully connected");
@@ -90,9 +92,9 @@ void setupMQTT() {
             display.clear();
             display.drawString(0, 0, "Failed to connect");
             display.drawString(0, 10, "There will be another connection");
-            display.drawString(0, 20, "attempt in 2s");
+            display.drawString(0, 20, "attempt in 10s");
             display.display();
-            delay(2000);
+            delay(10000);
         }
     }
 }
