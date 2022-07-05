@@ -17,6 +17,7 @@
 #define BAND    915E6  //Frequencia do radio - podemos utilizar ainda : 433E6, 868E6, 915E6
 #define PABOOST true
 
+byte destinationAddress = 0xAA;
 Adafruit_MPU6050 mpu;
 
 StaticJsonDocument<256> doc;
@@ -151,6 +152,7 @@ void loop() {
   LoRa.beginPacket();
   //print: adiciona os dados no pacote
   serializeJson(doc, out);
+  LoRa.write(destinationAddress);
   LoRa.print(out);
   //endPacket : fecha o pacote e envia
   LoRa.endPacket(); //retorno= 1:sucesso | 0: falha

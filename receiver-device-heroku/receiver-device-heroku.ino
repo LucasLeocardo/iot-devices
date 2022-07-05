@@ -37,6 +37,9 @@ String packSize = "--";
 String packet ;
 char buffer[256];
 
+// Endereço desse ESP32. Utilizado para somente ler mensagens lora que tenha o endereço correto indicado no conteúdo da mensagem
+byte localAddress = 0xAA;
+
 WiFiClientSecure wiFiClient;
 WebSocketClient wsClient(wiFiClient, MQTT_BROKER, MQTT_PORT);
 WebSocketStreamClient wsStreamClient(wsClient, PATH);
@@ -99,11 +102,10 @@ void setupMQTT() {
     }
 }
 
-void cbk(int packetSize) {
+void cbk() {
   packet ="";
-  packSize = String(packetSize,DEC); //transforma o tamanho do pacote em String para imprimirmos
-  for (int i = 0; i < packetSize; i++) { 
-    packet += (char) LoRa.read(); //recupera o dado recebido e concatena na variável "packet"
+  while (LoRa.available()) {
+    packet += (char)LoRa.read();
   }
   rssi = "(RSSI) = " + String(LoRa.packetRssi(), DEC) + "dB"; //configura a String de Intensidade de Sinal (RSSI)
   display.clear();
@@ -158,9 +160,12 @@ void setup() {
 void loop() {
   int packetSize = LoRa.parsePacket();
    if (packetSize) { 
-      digitalWrite(2, HIGH);   // liga o LED indicativo
-      delay(500);
-      cbk(packetSize);  
+      int receivingAddress = LoRa.read();
+      if (receivingAddress == localAddress){
+        digitalWrite(2, HIGH);   // liga o LED indicativo
+        delay(500);
+        cbk(); 
+      } 
   } 
 
   setupWifi();
