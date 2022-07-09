@@ -27,7 +27,8 @@
 #define GATEWAY_ID "62479bcee7668ac9a912b280"
 #define BROKER_USER_NAME "Cefet-Broker"
 #define BROKER_PASSWORD "78A23Erg"
-#define MQTT_MILLIS_TOPIC "vibrationData"
+#define MQTT_LINEAR_TOPIC "linearAccelerationData"
+#define MQTT_ANGULAR_TOPIC "angularAccelerationData"
 
 //parametros: address,SDA,SCL 
 SSD1306 display(0x3c, 4, 15); //construtor do objeto que controlaremos o display
@@ -38,7 +39,8 @@ String packet ;
 char buffer[256];
 
 // Endereço desse ESP32. Utilizado para somente ler mensagens lora que tenha o endereço correto indicado no conteúdo da mensagem
-byte localAddress = 0xAA;
+byte localAddressLinearData = 0xAA;
+byte localAddressAngularData = 0xBB;
 
 WiFiClientSecure wiFiClient;
 WebSocketClient wsClient(wiFiClient, MQTT_BROKER, MQTT_PORT);
@@ -102,7 +104,7 @@ void setupMQTT() {
     }
 }
 
-void cbk() {
+void SendLinearAccelerationData() {
   packet ="";
   while (LoRa.available()) {
     packet += (char)LoRa.read();
@@ -113,7 +115,22 @@ void cbk() {
   display.drawString(0, 20, rssi); 
   display.display();
   packet.toCharArray(buffer, 256);
-  MQTT.publish(MQTT_MILLIS_TOPIC, buffer);
+  MQTT.publish(MQTT_LINEAR_TOPIC, buffer);
+  digitalWrite(2, LOW);
+}
+
+void SendAngularAccelerationData() {
+  packet ="";
+  while (LoRa.available()) {
+    packet += (char)LoRa.read();
+  }
+  rssi = "(RSSI) = " + String(LoRa.packetRssi(), DEC) + "dB"; //configura a String de Intensidade de Sinal (RSSI)
+  display.clear();
+  display.drawString(0, 0, "Signal strength"); 
+  display.drawString(0, 20, rssi); 
+  display.display();
+  packet.toCharArray(buffer, 256);
+  MQTT.publish(MQTT_ANGULAR_TOPIC, buffer);
   digitalWrite(2, LOW);
 }
 
@@ -161,10 +178,13 @@ void loop() {
   int packetSize = LoRa.parsePacket();
    if (packetSize) { 
       int receivingAddress = LoRa.read();
-      if (receivingAddress == localAddress){
-        digitalWrite(2, HIGH);   // liga o LED indicativo
-        delay(500);
-        cbk(); 
+      digitalWrite(2, HIGH);   // liga o LED indicativo
+      delay(500);
+      if (receivingAddress == localAddressLinearData){
+        SendLinearAccelerationData(); 
+      }
+      else if (receivingAddress == localAddressAngularData){
+        SendAngularAccelerationData(); 
       } 
   } 
 

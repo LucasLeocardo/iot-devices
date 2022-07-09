@@ -17,12 +17,14 @@
 #define BAND    915E6  //Frequencia do radio - podemos utilizar ainda : 433E6, 868E6, 915E6
 #define PABOOST true
 
-byte destinationAddress = 0xAA;
+byte destinationAddressLinearData = 0xAA;
+byte destinationAddressAngularData = 0xBB;
 Adafruit_MPU6050 mpu;
 
-StaticJsonDocument<256> doc;
+StaticJsonDocument<256> docAcelLinear;
+StaticJsonDocument<256> docAcelAngular;
 char out[256];
-String deviceId = "628eccd5aa6849c399d00ee6";
+String deviceId = "62c8cf0794257003d4bf85e5";
 
 void setup() {
   pinMode(2,OUTPUT);
@@ -112,7 +114,8 @@ void setup() {
     break;
   }
 
-  doc["deviceId"] = deviceId;
+  docAcelLinear["deviceId"] = deviceId;
+  docAcelAngular["deviceId"] = deviceId;
   
   Serial.println("");
   delay(100);
@@ -142,17 +145,27 @@ void loop() {
   double alphaZ = aux6 / 100;
   
   //beginPacket : abre um pacote para adicionarmos os dados para envio
-  doc["acelX"]  = acelx;
-  doc["acelY"]  = acely;
-  doc["acelZ"]  = acelZ;
-  doc["alphaX"] = alphaX;
-  doc["alphaY"] = alphaY;
-  doc["alphaZ"] = alphaZ;
+  docAcelLinear["acelX"]  = acelx;
+  docAcelLinear["acelY"]  = acely;
+  docAcelLinear["acelZ"]  = acelZ;
+  docAcelAngular["alphaX"] = alphaX;
+  docAcelAngular["alphaY"] = alphaY;
+  docAcelAngular["alphaZ"] = alphaZ;
   
   LoRa.beginPacket();
   //print: adiciona os dados no pacote
-  serializeJson(doc, out);
-  LoRa.write(destinationAddress);
+  serializeJson(docAcelLinear, out);
+  LoRa.write(destinationAddressLinearData);
+  LoRa.print(out);
+  //endPacket : fecha o pacote e envia
+  LoRa.endPacket(); //retorno= 1:sucesso | 0: falha
+  
+  delay(1000); 
+  
+  LoRa.beginPacket();
+  //print: adiciona os dados no pacote
+  serializeJson(docAcelAngular, out);
+  LoRa.write(destinationAddressAngularData);
   LoRa.print(out);
   //endPacket : fecha o pacote e envia
   LoRa.endPacket(); //retorno= 1:sucesso | 0: falha
