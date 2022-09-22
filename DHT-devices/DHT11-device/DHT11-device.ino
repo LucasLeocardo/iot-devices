@@ -19,6 +19,7 @@
 #define BROKER_PASSWORD "78A23Erg"
 #define MQTT_TEMPERATURE_TOPIC "Temperature"
 #define MQTT_HUMIDITY_TOPIC "Humidity"
+#define MQTT_PING_TOPIC "Ping"
 #define GATEWAY_ID "62479bcee7668ac9a912b280"
 
 //parametros: address,SDA,SCL 
@@ -32,8 +33,9 @@ PubSubClient MQTT(wsStreamClient);
 
 StaticJsonDocument<256> docHumidity;
 StaticJsonDocument<256> docTemperature;
-char bufferHumidity[256];
-char bufferTemperature[256];
+char humidityBuffer[256];
+char temperatureBuffer[256];
+char pingBuffer[256];
 String deviceId = "632890754bd0466001a97e2a";
 float humidity, temperature;
 
@@ -67,6 +69,8 @@ void setupMQTT() {
 
    if (MQTT.connected())
         return;
+
+   MQTT.setKeepAlive(60); 
    
    while (!MQTT.connected()) 
    {
@@ -134,14 +138,17 @@ void loop()
     digitalWrite(2, HIGH);   // liga o LED indicativo
     docHumidity["humidity"] = humidity;
     docTemperature["temperature"] = temperature;
-    serializeJson(docHumidity, bufferHumidity);
-    MQTT.publish(MQTT_HUMIDITY_TOPIC, bufferHumidity);
-    serializeJson(docTemperature, bufferTemperature);
-    MQTT.publish(MQTT_TEMPERATURE_TOPIC, bufferTemperature);
+    serializeJson(docHumidity, humidityBuffer);
+    MQTT.publish(MQTT_HUMIDITY_TOPIC, humidityBuffer);
+    serializeJson(docTemperature, temperatureBuffer);
+    MQTT.publish(MQTT_TEMPERATURE_TOPIC, temperatureBuffer);
     delay(1000);
     digitalWrite(2, LOW);
   } 
-  delay(120000);
+  for (int i = 0; i <= 2; i++) {
+    MQTT.publish(MQTT_PING_TOPIC, pingBuffer);
+    delay(40000);
+  }
   setupWifi();
   setupMQTT();
 }
