@@ -20,7 +20,7 @@
 #define MQTT_TEMPERATURE_TOPIC "Temperature"
 #define MQTT_HUMIDITY_TOPIC "Humidity"
 #define MQTT_PING_TOPIC "Ping"
-#define GATEWAY_ID "62479bcee7668ac9a912b280"
+#define GATEWAY_ID "DHT22 Lora"
 
 //parametros: address,SDA,SCL 
 SSD1306 display(0x3c, 4, 15); //construtor do objeto que controlaremos o display
